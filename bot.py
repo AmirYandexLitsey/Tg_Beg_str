@@ -1,3 +1,5 @@
+from fastapi import FastAPI
+from fastapi.responses import HTMLResponse
 import os
 from aiogram import Bot, types
 from aiogram.dispatcher import Dispatcher, FSMContext
@@ -9,6 +11,18 @@ from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.dispatcher.filters import Text
 import sqlite3 as sq
 from bs4 import BeautifulSoup
+import uvicorn
+import logging
+
+
+
+
+
+TELEGRAM_TOKEN_BOT = '5809475526:AAEhtExdDhiZ28ueRUQYzPOtKnDo3Al-MFE'
+NGROK_TUNEL_URL = 'https://45c5-188-225-126-45.ngrok-free.app'
+app = FastAPI()
+WEBHOOK_PATH = f"/bot/{TELEGRAM_TOKEN_BOT}"
+WEBHOOK_URL = f"{NGROK_TUNEL_URL}{WEBHOOK_PATH}"
 
 
 def sql_start():
@@ -57,15 +71,27 @@ async def sql_delete_command(data):
     base.commit()
 
 
-bot = Bot(token='5809475526:AAEhtExdDhiZ28ueRUQYzPOtKnDo3Al-MFE')
+bot = Bot(token=TELEGRAM_TOKEN_BOT)
 
-
-async def on_startup(_):
+@app.on_event("startup")
+async def on_startup():
+    webhook_info = await bot.get_webhook_info()
+    if webhook_info.url != WEBHOOK_URL:
+        await bot.set_webhook(url=WEBHOOK_URL)
     print('Бот вышел в онлайн')
     sql_start()
     user_info()
 
+@app.post(WEBHOOK_PATH)
+async def bot_webhook(update: dict):
+    telegram_update = types.Update(**update)
+    Dispatcher.set_current(dp)
+    Bot.set_current(bot)
+    await dp.process_update(telegram_update)
 
+@app.on_event("shutdown")
+async def on_shutdown():
+    await bot.session.close()
 
 
 buttons = ReplyKeyboardMarkup(resize_keyboard=True)
@@ -118,6 +144,13 @@ async def reload_html(message: types.Message):
     with open('index.html', 'w') as f:
         f.write(html_code)
     await message.answer('HTML страница успешно обновлена')
+
+
+@app.get("/")
+async def read_root():
+    with open("index.html", "r") as f:
+        html = f.read()
+    return HTMLResponse(content=html, status_code=200)
 
 
 @dp.message_handler(commands=['register'])
@@ -361,5 +394,5 @@ async def commands_start(message: types.Message):
         await message.reply('Напиши боту в ЛС для того чтобы узнать его команды:\n@Li79_stroka_bot')
 
 
-if __name__ == "__main__":
-    executor.start_polling(dp, skip_updates=True, on_startup=on_startup)
+#if __name__ == "__main__":
+    #executor.start_polling(dp, skip_updates=True, on_startup=on_startup)
