@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from aiogram import Bot, types
@@ -8,12 +9,16 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.dispatcher.filters import Text
 import sqlite3 as sq
+from dotenv import load_dotenv
 
-TELEGRAM_TOKEN_BOT = '5809475526:AAEhtExdDhiZ28ueRUQYzPOtKnDo3Al-MFE'
-NGROK_TUNEL_URL = 'https://45c5-188-225-126-45.ngrok-free.app'
+load_dotenv()
 app = FastAPI()
+
+TELEGRAM_TOKEN_BOT = os.getenv("TELEGRAM_TOKEN_BOT")
+HOOK = os.getenv("HOOK")
+
 WEBHOOK_PATH = f"/bot/{TELEGRAM_TOKEN_BOT}"
-WEBHOOK_URL = f"{NGROK_TUNEL_URL}{WEBHOOK_PATH}"
+WEBHOOK_URL = f"{HOOK}{WEBHOOK_PATH}"
 
 
 def sql_start():
